@@ -1,5 +1,6 @@
-from pytest_cqase import QasePytestPluginSingleton
-from pytest_cqase.plugin import QasePytestPlugin
+from cqase.client import QaseClient
+
+from pytest_cqase.plugin import PyTestQasePlugin
 
 
 def get_option_ini(config, name):
@@ -76,30 +77,14 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    if not hasattr(config, "slaveinput"):
-        QasePytestPlugin.drop_run_id()
-        config.addinivalue_line(
-            "markers", "qase(*ids): mark test to be associate with Qase TMS"
+    if get_option_ini(config, "qs_enabled"):
+        client = QaseClient(
+            api_token=get_option_ini(config, "qs_api_token"),
         )
-        if get_option_ini(config, "qs_enabled"):
-            QasePytestPluginSingleton.init(
-                api_token=get_option_ini(config, "qs_api_token"),
-                project=get_option_ini(config, "qs_project_code"),
-                testrun=get_option_ini(config, "qs_testrun_id"),
-                testplan=get_option_ini(config, "qs_testplan_id"),
-                create_run=get_option_ini(config, "qs_new_run"),
-                complete_run=get_option_ini(config, "qs_complete_run"),
-                debug=get_option_ini(config, "qs_debug"),
-            )
-            config.qaseio = QasePytestPluginSingleton.get_instance()
-            config.pluginmanager.register(
-                config.qaseio,
-                name="qase-pytest",
-            )
+        config.pluginmanager.register(
+            PyTestQasePlugin(
+                client=client
+            ),
+            name="qase-pytest",
+        )
 
-
-def pytest_unconfigure(config):
-    qaseio = getattr(config, "qaseio", None)
-    if qaseio:
-        del config.qaseio
-        config.pluginmanager.unregister(qaseio)
