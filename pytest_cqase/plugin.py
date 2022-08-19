@@ -10,13 +10,13 @@ from pytest_cqase.singltone_like import QaseObject
 
 logger = logging.getLogger("qase")
 
+
 class qase:
     """Class with decorators for pytest"""
 
     @staticmethod
     def id(*ids):
-        """
-        """
+        """ """
         return pytest.mark.qase(ids=ids)
 
 
@@ -27,14 +27,14 @@ class PyTestQasePlugin:
         self.meta_run_file = pathlib.Path("qaseio.runid")
         self.url = "https://app.qase.io/run/{}/dashboard/{}"
 
-    QASE_MARKER = 'qase'
+    QASE_MARKER = "qase"
     test_run_id = None
     COMMENT = "Pytest Plugin Automation Run"
     TEST_STATUS = {
-        "PASSED": 'passed',
-        "FAILED": 'failed',
-        "SKIPPED": 'skipped',
-        "BLOCKED": 'blocked',
+        "PASSED": "passed",
+        "FAILED": "failed",
+        "SKIPPED": "skipped",
+        "BLOCKED": "blocked",
     }
 
     def _get_qase_ids(self, items) -> list:
@@ -88,22 +88,22 @@ class PyTestQasePlugin:
             QaseObject().test_run_id = test_run_id
             logger.info(f"Create new test run: {self.url.format('TP', test_run_id)}")
 
-    def _get_qase_id_from_report(self, item) -> int:
+    def _get_qase_id_from_report(self, item) -> None | int:
         # TODO may be same ids
         marks = item.own_markers
         qase_mark = list(mark for mark in marks if mark.name == self.QASE_MARKER)
         if len(qase_mark) > 0:
-            return qase_mark[0].kwargs.get('ids')[0]
-        return -1
+            return qase_mark[0].kwargs.get("ids")[0]
+        return None
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
         outcome = yield
         report = outcome.get_result()
         test_fn = item.obj
-        if report.when != 'teardown':
+        if report.when != "teardown":
             description = self.COMMENT
-            docstring = getattr(test_fn, '__doc__', None)
+            docstring = getattr(test_fn, "__doc__", None)
             qase_id = self._get_qase_id_from_report(item)
             result = report.outcome
             duration = report.duration
@@ -112,20 +112,22 @@ class PyTestQasePlugin:
                     description = "".join([self.COMMENT, docstring, report.caplog])
                 self.qase_object.test_cases[qase_id].description = description
                 self.qase_object.test_cases[qase_id].duration = duration
-                if report.outcome == self.TEST_STATUS.get('FAILED'):
+                if report.outcome == self.TEST_STATUS.get("FAILED"):
                     self.qase_object.test_cases[qase_id].result = result
                     stacktrace = report.longreprtext
                     self.qase_object.test_cases[qase_id].stacktrace = stacktrace
                     return
-                if report.outcome == self.TEST_STATUS.get(
-                        'SKIPPED') and report.longrepr:
+                if (
+                    report.outcome == self.TEST_STATUS.get("SKIPPED")
+                    and report.longrepr
+                ):
                     self.qase_object.test_cases[qase_id].result = result
                     return
-                if report.outcome == self.TEST_STATUS.get('SKIPPED'):
+                if report.outcome == self.TEST_STATUS.get("SKIPPED"):
                     self.qase_object.test_cases[qase_id].result = result
                     return
-                if report.outcome == self.TEST_STATUS.get('PASSED'):
-                    if self.qase_object.test_cases[qase_id].result != 'failed':
+                if report.outcome == self.TEST_STATUS.get("PASSED"):
+                    if self.qase_object.test_cases[qase_id].result != "failed":
                         self.qase_object.test_cases[qase_id].result = result
                     return
 
@@ -133,19 +135,23 @@ class PyTestQasePlugin:
         results_send = []
         try:
             for key, value in self.qase_object.test_cases.items():
-                if value.result != 'untested':
+                if value.result != "untested":
                     results_send.append(
-                        {"case_id": value.qase_id, "status": value.result,
-                         "comment": value.description,
-                         'stacktrace': value.stacktrace,
-                         "time_ms": int(value.duration * 1000),
-                         })
-            return {'results': results_send}
+                        {
+                            "case_id": value.qase_id,
+                            "status": value.result,
+                            "comment": value.description,
+                            "stacktrace": value.stacktrace,
+                            "time_ms": int(value.duration * 1000),
+                        }
+                    )
+            return {"results": results_send}
         except AttributeError:
             pass
 
     def pytest_sessionfinish(self, session, exitstatus):
         body = self._create_bulk_body()
-        res_bulk = self.client.results.bulk(code="TP", uuid=QaseObject().test_run_id,
-                                            body=body)
+        res_bulk = self.client.results.bulk(
+            code="TP", uuid=QaseObject().test_run_id, body=body
+        )
         assert res_bulk

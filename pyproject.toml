@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cqase-pytest"
-version = "0.1.2"
+version = "0.1.5"
 description = "Custom qase pytest plugin"
 authors = ["alexanderlozovoy <berpress@gmail.com>"]
 packages = [
@@ -15,6 +15,10 @@ filelock = "^3.8.0"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.20.0"
+
+[tool.poetry.plugins."pytest11"]
+name_of_plugin = "pytest_cqase.conftest"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
