@@ -106,13 +106,12 @@ class PyTestQasePlugin:
     def _create_qase_results_object(self, testcase_ids):
         self.qase_object.create_test_ids_dict(testcase_ids)
 
-    def _get_qase_id_from_report(self, item) -> None | int:
+    def _get_qase_id_from_report(self, item):
         # TODO may be same ids
         marks = item.own_markers
         qase_mark = list(mark for mark in marks if mark.name == self.QASE_MARKER)
         if len(qase_mark) > 0:
             return qase_mark[0].kwargs.get("ids")[0]
-        raise MoreThenOneCaseIdException("More than one value added")
 
     @pytest.hookimpl(trylast=True)
     def pytest_collection_modifyitems(self, items):
@@ -166,7 +165,10 @@ class PyTestQasePlugin:
 
     def _confirm_run_complete(self):
         if self.qs_complete_run:
-            self.client.runs.complete(self.qs_project_code, self.qs_testrun_id)
+            res = self.client.runs.complete(
+                self.qs_project_code, self.qase_object.test_run_id
+            )
+            assert res
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
@@ -206,6 +208,8 @@ class PyTestQasePlugin:
     def pytest_sessionfinish(self):
         body = self._create_bulk_body()
         self._send_bulk_results(body=body)
+
+        self._confirm_run_complete()
 
         if self.meta_run_file.exists():
             self.meta_run_file.unlink()

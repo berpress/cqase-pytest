@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cqase-pytest"
-version = "0.1.5"
+version = "0.1.8"
 description = "Custom qase pytest plugin"
 authors = ["alexanderlozovoy <berpress@gmail.com>"]
 packages = [
