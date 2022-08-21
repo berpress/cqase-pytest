@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "pytest-cqase"
-version = "0.1.10"
+version = "0.1.11"
 description = "Custom qase pytest plugin"
 authors = ["alexanderlozovoy <berpress@gmail.com>"]
+repository = "https://github.com/berpress/cqase-pytest"
 packages = [
     { include = "pytest_cqase/**/*.py" },
 ]
