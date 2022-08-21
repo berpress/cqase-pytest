@@ -23,12 +23,15 @@ class QaseObject(metaclass=Singleton):
         self.test_cases = t_cases
 
 
-
 class TestCase:
-    def __init__(self, qase_id: int, comment: str = None,
-                 result: str = 'untested',
-                 stacktrace: str = None,
-                 description: str = None):
+    def __init__(
+        self,
+        qase_id: int,
+        comment: str = None,
+        result: str = "untested",
+        stacktrace: str = None,
+        description: str = None,
+    ):
         self.qase_id = qase_id
         self.result = result
         self.comment = comment

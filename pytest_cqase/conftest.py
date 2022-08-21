@@ -43,20 +43,14 @@ def pytest_addoption(parser):
     add_option_ini(
         "--qase-testrun",
         "qs_testrun_id",
+        default=None,
         help="Testrun ID in Qase TMS",
     )
     add_option_ini(
         "--qase-testplan",
         "qs_testplan_id",
+        default=None,
         help="Testplan ID in Qase TMS",
-    )
-    add_option_ini(
-        "--qase-new-run",
-        "qs_new_run",
-        default=False,
-        type="bool",
-        help="Create new testrun, if no testrun id provided",
-        action="store_true",
     )
     add_option_ini(
         "--qase-complete-run",
@@ -66,25 +60,26 @@ def pytest_addoption(parser):
         help="Complete run after all tests are finished",
         action="store_true",
     )
-    add_option_ini(
-        "--qase-debug",
-        "qs_debug",
-        default=False,
-        type="bool",
-        help="Prints additional output of plugin",
-        action="store_true",
-    )
 
 
 def pytest_configure(config):
-    if get_option_ini(config, "qs_enabled"):
+    qs_enabled = get_option_ini(config, "qs_enabled")
+    if qs_enabled:
+        qs_api_token = get_option_ini(config, "qs_api_token")
+        qs_project_code = get_option_ini(config, "qs_project_code")
+        qs_testrun_id = get_option_ini(config, "qs_testrun_id")
+        qs_complete_run = get_option_ini(config, "qs_complete_run")
+
         client = QaseClient(
-            api_token=get_option_ini(config, "qs_api_token"),
+            api_token=qs_api_token,
         )
+
         config.pluginmanager.register(
             PyTestQasePlugin(
-                client=client
+                client=client,
+                qs_project_code=qs_project_code,
+                qs_testrun_id=qs_testrun_id,
+                qs_complete_run=qs_complete_run,
             ),
             name="qase-pytest",
         )
-
