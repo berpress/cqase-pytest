@@ -1,6 +1,8 @@
 # pytest-cqase
 ![versions](https://img.shields.io/pypi/pyversions/pybadges.svg)
 
+[![Downloads](https://pepy.tech/badge/pytest-cqase)](https://pepy.tech/project/pytest-cqase)
+
 This is a custom pytest plugin for TMS QASE.
 
 Official pytest plugin: https://github.com/qase-tms/qase-python/tree/master/qase-pytest
@@ -77,6 +79,56 @@ def test_example_2():
 
 Each unique number can only be assigned once to the class or function being used. You could pass as much IDs as you need.
 
+When you need to push some additional information to server you could use
+attachments:
+
+```python
+import pytest
+from pytest_cqase.plugin import qase
+
+
+@pytest.fixture(scope="session")
+def driver():
+    driver = webdriver.Chrome()
+    yield driver
+    logs = "\n".join(str(row) for row in driver.get_log('browser')).encode('utf-8')
+    qase.attach("browser.log")
+    driver.quit()
+
+@qase.id(13)
+def test_example_1():
+    qase.attach("/path/to/file", "/path/to/file/2")
+    qase.attach(
+        ("/path/to/file/cat.png"),
+        ("/path/to/file/3"),
+    )
+```
+
+You could pass as much files as you need.
+
+Also you should know, that if no case id is associated with current test in
+pytest - attachment would not be uploaded:
+
+```python
+import pytest
+from pytest_cqase.plugin import qase
+
+
+@pytest.fixture(scope="session")
+def driver():
+    driver = webdriver.Chrome()
+    yield driver
+    logs = "\n".join(str(row) for row in driver.get_log('browser')).encode('utf-8')
+    # This would do nothing, because last test does not have case id link
+    qase.attach((logs, MimeTypes.TXT, "browser.log"))
+    driver.quit()
+
+def test_example_2(driver):
+    # This would do nothing
+    qase.attach((driver.get_screenshot_as_png(), MimeTypes.PNG, "result.png"))
+```
+
+
 ### Possible cases statuses
 
 - PASSED - when test passed
@@ -88,5 +140,5 @@ Each unique number can only be assigned once to the class or function being used
 
 1. Tests use only bulk sending of results, do not forget to enable this option in the settings
 2. To run parallel tests (xdist), do not use the option qs_complete_run
-3. At the moment, the plugin does not support adding attachments.
+3. ~~At the moment, the plugin does not support adding attachments.~~
 4. Auto creation of test cases will be added in the future
