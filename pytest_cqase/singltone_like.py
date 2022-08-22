@@ -12,9 +12,12 @@ class Singleton(type):
 
 
 class QaseObject(metaclass=Singleton):
-    def __init__(self):
+    def __init__(self, project_code=None, client=None):
         self.test_cases = None
         self.test_run_id = None
+        self.current_id = None
+        self.project_code = project_code
+        self.client = client
 
     def create_test_ids_dict(self, test_cases) -> dict:
         t_cases = {}
@@ -38,3 +41,4 @@ class TestCase:
         self.stacktrace = stacktrace
         self.description = description
         self.duration = 0
+        self.attachments = []

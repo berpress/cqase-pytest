@@ -15,6 +15,14 @@ class qase:
         """ """
         return pytest.mark.qase(ids=ids)
 
+    @staticmethod
+    def attach(path: str):
+        qase_object = QaseObject()
+        res = qase_object.client.attachments.upload(qase_object.project_code, path)
+        qase_object.test_cases.get(qase_object.current_id).attachments.append(
+            res.body.get("result")[0].get("hash")
+        )
+
 
 class MoreThenOneCaseIdException(Exception):
     pass
@@ -38,9 +46,9 @@ class PyTestQasePlugin:
         qs_complete_run: bool = None,
     ):
         self.client = client
-        self.qase_object = QaseObject()
         self.meta_run_file = pathlib.Path("qaseio.runid")
         self.qs_project_code = self._check_project_code(qs_project_code)
+        self.qase_object = QaseObject(qs_project_code, client)
         self.qs_testrun_id = qs_testrun_id
         self.qs_new_run = qs_new_run
         self.qs_complete_run = qs_complete_run
@@ -133,6 +141,10 @@ class PyTestQasePlugin:
         try:
             for key, value in self.qase_object.test_cases.items():
                 if value.result != "untested":
+                    attachments_list = []
+                    if len(value.attachments) > 0:
+                        for hash in value.attachments:
+                            attachments_list.append(hash)
                     results_send.append(
                         {
                             "case_id": value.qase_id,
@@ -140,6 +152,7 @@ class PyTestQasePlugin:
                             "comment": value.description,
                             "stacktrace": value.stacktrace,
                             "time_ms": int(value.duration * 1000),
+                            "attachments": attachments_list,
                         }
                     )
             return {"results": results_send}
@@ -182,6 +195,7 @@ class PyTestQasePlugin:
             result = report.outcome
             duration = report.duration
             if qase_id:
+                self.qase_object.current_id = qase_id
                 if docstring:
                     description = "".join([self.COMMENT, docstring, report.caplog])
                 self.qase_object.test_cases[qase_id].description = description
@@ -204,6 +218,8 @@ class PyTestQasePlugin:
                     if self.qase_object.test_cases[qase_id].result != "failed":
                         self.qase_object.test_cases[qase_id].result = result
                     return
+            else:
+                self.qase_object.current_id = None
 
     def pytest_sessionfinish(self):
         body = self._create_bulk_body()
